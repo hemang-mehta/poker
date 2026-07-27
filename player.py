@@ -4,8 +4,8 @@ class Player:
         
         self.cards = []
         
-        self.bet = 0
+        self.total_bet = 0
+        self.curr_round_bet = 0
         self.all_in = False
         self.fold = False
-    
-    
+        self.eliminated = False
