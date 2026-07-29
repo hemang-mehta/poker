@@ -9,3 +9,6 @@ class Player:
         self.all_in = False
         self.fold = False
         self.eliminated = False
+        
+        self.hand_rank = -1
+        self.hand = []

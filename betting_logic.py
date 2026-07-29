@@ -2,7 +2,7 @@ class BettingLogic:
     def __init__(self, game):
         self.game = game
         self.raise_amt = 0
-        self.player_ind = 0
+        self.player_ind = 1
         self.player_round_start = 0
     
     def betting_round(self, preFlop):

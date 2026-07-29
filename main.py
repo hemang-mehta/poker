@@ -2,12 +2,16 @@ class Poker_Game:
     
     def __init__(self):
         import cards
+        from collections import deque
         
         self.cards = cards.Cards()
         
         # Full Deck
         self.full_deck = self.cards.get_full_deck()
+        self.full_deck = deque(self.full_deck)
+        
         self.num_players = 3
+        self.table_cards = []
         self.players = []
         self.pot = 0
         self.small_blind = 100
@@ -15,6 +19,7 @@ class Poker_Game:
     
     def play(self):
         import betting_logic
+        import dealer
         
         # Shuffle Deck
         self.cards.shuffle_cards(self.full_deck)
@@ -22,8 +27,10 @@ class Poker_Game:
         # Get Players
         self.create_players()
         
+        main_dealer = dealer.Dealer(self)
+        
         # Deal Cards
-        self.deal_cards()
+        main_dealer.deal_cards()
         
         for i in range(self.num_players):
             print(f"Player {i + 1}: ")
@@ -32,7 +39,25 @@ class Poker_Game:
         
         bets = betting_logic.BettingLogic(self)
         
+        # Place bets (Pre-Flop)
         bets.betting_round(preFlop=True)
+        
+        # Show first 3 cards on table
+        main_dealer.open_table_cards(isPreFlop=True)
+        
+        bets.betting_round(preFlop=False)
+        
+        main_dealer.open_table_cards(isPreFlop=False)
+        
+        bets.betting_round(preFlop=False)
+        
+        import hand_evaluator
+        
+        he = hand_evaluator.Evaluator(self)
+        
+        winner = he.evaluate_hands()
+        
+        
         
         
     
@@ -45,12 +70,6 @@ class Poker_Game:
             self.players.append(player.Player())
         
         return self.players
-    
-    def deal_cards(self):
-        for p in range(self.num_players):
-            self.players[p].cards.append(self.full_deck[p])
-            self.players[p].cards.append(self.full_deck[p + self.num_players])
-
     
 if __name__ == "__main__":
     print("Running poker game...")
