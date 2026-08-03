@@ -7,17 +7,7 @@ class Cards:
             4   # Heart
         ]
         
-        self.cards = [i for i in range(1, 14)] # 12,13,14 -> (Jack, Queen, King)
-        
-        self.full_deck = [f"{i}_{j}" for i in self.card_classes for j in self.cards]
-    
-    def get_full_deck(self):
-        return self.full_deck
-    
-    def shuffle_cards(self, cards):
-        import random
-        
-        random.shuffle(cards)
+        self.cards = [i for i in range(1, 14)] # 11,12,13 -> (Jack, Queen, King)
     
     def print_cards(self, cards_list):
         card_names = []
@@ -33,5 +23,5 @@ class Cards:
         return card_names
 
 if __name__ == "__main__":
-    import main
-    main.run()
+    import game
+    game.run()
