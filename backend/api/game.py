@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-import service.game_service
-import schemas.game as schema
+import backend.service.game_service
+import backend.schemas.game as schema
 
 router = APIRouter(prefix="/game")
 
-gmservice = service.game_service.GameService()
+gmservice = backend.service.game_service.GameService()
 
 @router.post("/start")
 def start_game(req: schema.CreateGameRequest):

@@ -3,7 +3,7 @@ class GameManager:
         self.game_list = []
 
     def create_game(self, player_name, chips, max_players):
-        import poker.game as game
+        import backend.poker.game as game
         
         self.game_list.append(game.Poker_Game())
         return len(self.game_list) - 1

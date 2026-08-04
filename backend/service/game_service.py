@@ -1,5 +1,5 @@
-import core.game_manager as manager
-from schemas.game import CreateGameRequest
+import backend.core.game_manager as manager
+from backend.schemas.game import CreateGameRequest
 
 class GameService:
     def __init__(self):

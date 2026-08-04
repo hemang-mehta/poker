@@ -1,5 +1,5 @@
-import poker.card as card
-import deck
+import backend.poker.card as card
+import backend.poker.deck as deck
 
 class PokerGame:
 
@@ -19,9 +19,9 @@ class PokerGame:
         self.dealer_ind = 0  # NEW: tracks the button/dealer seat
 
     def play(self):
-        import poker.betting_logic as betting_logic
-        import poker.dealer as dealer
-        import poker.hand_evaluator as hand_evaluator
+        import backend.poker.betting_logic as betting_logic
+        import backend.poker.dealer as dealer
+        import backend.poker.hand_evaluator as hand_evaluator
 
         # Shuffle Deck
         self.cards.shuffle_cards(self.full_deck)
@@ -129,7 +129,7 @@ class PokerGame:
         self.pot = 0
 
     def create_players(self):
-        import poker.player as player
+        import backend.poker.player as player
 
         # Creating Players
         self.players = []
