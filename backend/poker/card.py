@@ -23,5 +23,5 @@ class Cards:
         return card_names
 
 if __name__ == "__main__":
-    import backend.poker.game as game
+    import poker.game as game
     game.run()

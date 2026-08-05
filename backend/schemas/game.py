@@ -5,7 +5,5 @@ class CreateGameRequest(BaseModel):
     starting_money: int = Field(gt=0)
     max_players: int = Field(ge=2, le=9)
 
-class CreateGameResponse(BaseModel):
-    game_id: str
-    status: str
-    player_count: int
+# class CreateGameResponse(BaseModel):
+#     game_id: int

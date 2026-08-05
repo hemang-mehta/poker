@@ -1,6 +1,9 @@
 class Player:
-    def __init__(self):
-        self.curr_money_left = 10000
+    def __init__(self, name, money=10000, is_bot=False):
+        
+        self.player_name = name        
+        self.curr_money_left = money
+        self.is_bot = is_bot
         
         self.cards = []
         
@@ -12,3 +15,9 @@ class Player:
         
         self.hand_rank = -1
         self.hand = []
+
+class Bot(Player):
+
+    def decide_action(self, game_state):
+        # AI logic will go here
+        pass

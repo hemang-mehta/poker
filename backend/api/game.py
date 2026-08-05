@@ -1,15 +1,22 @@
 from fastapi import APIRouter
-import backend.service.game_service
-import backend.schemas.game as schema
+import service.game_service
+import schemas.game as schema
+from schemas.game import CreateGameRequest
 
-router = APIRouter(prefix="/game")
+router = APIRouter(
+    prefix="/games",
+    tags=["Games"]
+)
 
-gmservice = backend.service.game_service.GameService()
+gmservice = service.game_service.GameService()
 
 @router.post("/start")
-def start_game(req: schema.CreateGameRequest):
+def start_game(req: CreateGameRequest):
     game_id = gmservice.create_game(request=req)
     return {"message": f"Game started. Game => {gmservice.get_game(game_id)}"}
 
 # Can also return like this!!!
-# @router.post("/games", response_model=CreateGameResponse)
+@router.post("/creategame")
+def create_game(req: CreateGameRequest):
+    guid = gmservice.create_game(request=req)
+    return guid

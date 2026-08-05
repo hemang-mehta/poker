@@ -1,5 +1,5 @@
 import random
-import backend.poker.card as card
+import poker.card as card
 # from collections import deque
 
 class Deck:

@@ -1,9 +1,10 @@
-import backend.poker.card as card
-import backend.poker.deck as deck
+import poker.deck as deck
 
 class PokerGame:
 
-    def __init__(self, host_name, host_money, max_players):
+    def __init__(self, guid, host_name, starting_money, max_players):
+        
+        self.guid = guid
         
         # Full Deck
         self.deck = deck.Deck()
@@ -17,11 +18,13 @@ class PokerGame:
         self.small_blind = 100
         self.big_blind = 200
         self.dealer_ind = 0  # NEW: tracks the button/dealer seat
+        
+        self.create_players(host_name, starting_money)
 
     def play(self):
-        import backend.poker.betting_logic as betting_logic
-        import backend.poker.dealer as dealer
-        import backend.poker.hand_evaluator as hand_evaluator
+        import poker.betting_logic as betting_logic
+        import poker.dealer as dealer
+        import poker.hand_evaluator as hand_evaluator
 
         # Shuffle Deck
         self.cards.shuffle_cards(self.full_deck)
@@ -128,12 +131,13 @@ class PokerGame:
             print(f"Player {self.players.index(w) + 1} wins {share} chips!")
         self.pot = 0
 
-    def create_players(self):
-        import backend.poker.player as player
+    def create_players(self, host_name, host_money):
+        from poker.player import Player, Bot
 
         # Creating Players
         self.players = []
-        for i in range(self.num_players):
-            self.players.append(player.Player())
-
-        return self.players
+        
+        self.players.append(Player(name=host_name, money=host_money))
+        for i in range(self.num_players - 1):
+            self.players.append(Bot(name=f"Bot_{i+1}", is_bot=True))
+        return
