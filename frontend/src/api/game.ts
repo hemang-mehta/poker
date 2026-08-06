@@ -9,3 +9,8 @@ export async function createGame(data: {
 
     return response.data;
 }
+
+export async function getGame(gameID: string) {
+    const response = await client.get("/games/" + gameID);
+    return response.data;
+}

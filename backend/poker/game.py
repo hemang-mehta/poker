@@ -17,7 +17,7 @@ class PokerGame:
         self.pot = 0
         self.small_blind = 100
         self.big_blind = 200
-        self.dealer_ind = 0  # NEW: tracks the button/dealer seat
+        self.dealer_ind = 0  # NEW: tracks the button/dealer seat+
         
         self.create_players(host_name, starting_money)
 
@@ -138,6 +138,6 @@ class PokerGame:
         self.players = []
         
         self.players.append(Player(name=host_name, money=host_money))
-        for i in range(self.num_players - 1):
+        for i in range(self.max_players - 1):
             self.players.append(Bot(name=f"Bot_{i+1}", is_bot=True))
         return
