@@ -1,6 +1,7 @@
 from itertools import combinations
 from collections import Counter
-
+from poker.player import Player
+from poker.game import PokerGame
 
 class Evaluator:
     """
@@ -26,10 +27,10 @@ class Evaluator:
     }
 
     def __init__(self, game):
-        self.game = game
+        self.game: PokerGame = game
 
     def evaluate_hands(self):
-        contenders = [p for p in self.game.players if not p.fold and not p.eliminated]
+        contenders: list[Player] = [p for p in self.game.players if not p.fold and not p.eliminated]
 
         if not contenders:
             return None
@@ -37,7 +38,7 @@ class Evaluator:
             return contenders[0]
 
         best_score = None
-        winners = []
+        winners: list[Player] = []
 
         for player in contenders:
             all_cards = player.cards + self.game.table_cards
@@ -45,23 +46,12 @@ class Evaluator:
             player.hand_rank = score[0]
             player.hand = best_five
 
-            player_num = self.game.players.index(player) + 1
-            hand_desc = ", ".join(self.game.cards.print_cards(best_five))
-            print(f"Player {player_num}: {self.HAND_NAMES[score[0]]} ({hand_desc})")
-
             if best_score is None or score > best_score:
                 best_score = score
                 winners = [player]
             elif score == best_score:
                 winners.append(player)
 
-        if len(winners) == 1:
-            player_num = self.game.players.index(winners[0]) + 1
-            print(f"Player {player_num} wins with {self.HAND_NAMES[best_score[0]]}!")
-            return winners[0]
-
-        player_nums = ", ".join(str(self.game.players.index(w) + 1) for w in winners)
-        print(f"Split pot between players {player_nums} ({self.HAND_NAMES[best_score[0]]})")
         return winners
 
     def _best_hand(self, cards):

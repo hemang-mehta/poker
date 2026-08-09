@@ -9,8 +9,8 @@ class Deck:
     
     def create_full_deck(self):
         self.full_deck = [f"{i}_{j}" for i in self.cards.card_classes for j in self.cards.cards]
-        self.shuffle_cards(self.full_deck)
-        # self.full_deck = deque(self.full_deck)
+        self.shuffle_cards()
+        return self.full_deck
     
-    def shuffle_cards(self, cards):
-        random.shuffle(cards)
+    def shuffle_cards(self):
+        random.shuffle(self.full_deck)

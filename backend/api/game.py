@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket, Query
 import service.game_service
 import schemas.game as schema
 from schemas.game import CreateGameRequest
+from core.connection_manager import manager as connection_manager
 
 router = APIRouter(
     prefix="/games",
@@ -24,3 +25,15 @@ def create_game(req: CreateGameRequest):
 @router.get("/{gameid}")
 def get_game(gameid):
     return gmservice.get_game(gameid)
+
+@router.websocket("/game_data")
+async def get_curr_game_data(websocket: WebSocket, game_id: str = Query(...)):
+    await connection_manager.connect(game_id, websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle any messages from client if necessary
+    except Exception:
+        pass
+    finally:
+        connection_manager.disconnect(game_id, websocket)
