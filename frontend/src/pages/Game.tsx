@@ -14,7 +14,7 @@ function Game() {
     useEffect(() => {
         const apiUrl = import.meta.env.VITE_API_URL;
 
-        const ws = new WebSocket(apiUrl + "/games/game_data");
+        const ws = new WebSocket(`${apiUrl}/games/game_data?game_id=${gameId}`);
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -37,7 +37,8 @@ function Game() {
         async function fetchGame() {
             try {
                 if (gameId == undefined) return;
-                const data = await getGame(gameId);
+                const data: GameData = await getGame(gameId, 1);
+                gameState(data);
                 setGame(data);
             } catch (error) {
                 console.error("Error fetching game:", error);
@@ -45,14 +46,50 @@ function Game() {
                 setLoading(false);
             }
         }
+
+        function gameState(data: GameData) {
+            switch(data.state)
+            {
+                case "PREFLOP":
+                    console.log("is preflop state");
+            }
+        }
     }, [gameId]);
 
-    function sendMessage() {
+    function sendAction(action: string, amount: number = 0) {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({
-                message: "ws msg"
+                type: "PLAYER_ACTION",
+                action: action,
+                amount: amount,
+                gameid: gameId,
+                player_id: 1 // Hardcoded for now, should be current user ID
             }));
+        } else {
+            console.error("WebSocket is not open");
         }
+    }
+
+    function handleCall() {
+        sendAction("Call");
+    }
+
+    function handleRaise() {
+        const amount = window.prompt("Enter raise amount:");
+        const raiseAmt = Number(amount);
+        if (!isNaN(raiseAmt) && raiseAmt > 0) {
+            sendAction("Raise", raiseAmt);
+        } else {
+            alert("Please enter a valid amount");
+        }
+    }
+
+    function handleFold() {
+        sendAction("Fold");
+    }
+
+    function handleAllIn() {
+        sendAction("All In");
     }
 
 
@@ -94,8 +131,14 @@ function Game() {
                     ))}
                 </tbody>
             </table>
-            <button onClick={sendMessage}>Bet</button>
+            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                <button onClick={handleCall}>Call / Bet</button>
+                <button onClick={handleRaise}>Raise</button>
+                <button onClick={handleFold}>Fold</button>
+                <button onClick={handleAllIn}>All In</button>
+            </div>
         </>
+
     );
 }
 

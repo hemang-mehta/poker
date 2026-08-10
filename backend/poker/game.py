@@ -1,5 +1,5 @@
 import poker.deck as deck
-from poker.player import Player
+from poker.player import Player, Bot
 from poker.dealer import Dealer
 from poker.betting_logic import BettingLogic
 from poker.hand_evaluator import Evaluator
@@ -26,7 +26,7 @@ class PokerGame:
         self.big_blind = 200
         self.call_amt = self.big_blind
         
-        self.main_dealer = Dealer()
+        self.main_dealer = Dealer(self)
         self.dealer_ind = 0  # NEW: tracks the button/dealer seat+
         
         self.state = "PREFLOP"
@@ -295,8 +295,6 @@ class PokerGame:
 
     """Create the user as player 1 and the rest are bots"""
     def create_players(self, host_name, host_money):
-        from poker.player import Player, Bot
-
         # Creating Players
         self.players = []
         

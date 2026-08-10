@@ -9,6 +9,6 @@ class GameService:
         gmid = self.manager.create_game(request = request)
         return gmid
     
-    def get_game(self, gameid):
+    def get_game(self, gameid: str):
         game_obj = self.manager.get_game(gameid)
         return game_obj

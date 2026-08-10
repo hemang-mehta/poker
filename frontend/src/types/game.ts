@@ -18,7 +18,8 @@ export type GameData = {
     max_players: number,
     num_players: number,
     pot: number,
-    table_cards: string[]
+    table_cards: string[],
+    state: string
 };
 
 type Player = {

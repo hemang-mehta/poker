@@ -23,12 +23,20 @@ function CreateGame() {
                 max_players: maxPlayers,
             });
 
-            console.log(response);
-            
-            navigate(`/games/${response}`);
+            if (response.status === 200 || response.status === 201) {
+                console.log("Game created successfully:", response.data);
+                navigate(`/games/${response.data.game_id}`);
+            } else {
+                setError("Unexpected response from server.");
+            }
 
-        } catch (err) {
-            setError("Failed to create game.");
+        } catch (err: any) {
+            if (err.response) {
+                // Server responded with a status code outside of 2xx range
+                setError(`Error: ${err.response.status} - ${err.response.data?.message || "Failed to create game."}`);
+            } else {
+                setError("Network error. Please check if the backend is running.");
+            }
             console.error(err);
         } finally {
             setLoading(false);

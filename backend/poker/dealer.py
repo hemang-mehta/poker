@@ -1,8 +1,6 @@
-from poker.game import PokerGame
-
 class Dealer:
     def __init__(self, game):
-        self.game: PokerGame = game
+        self.game = game
 
     def deal_cards(self):
         for _ in range(2):

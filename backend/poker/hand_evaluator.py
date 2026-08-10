@@ -1,7 +1,8 @@
+from __future__ import annotations
 from itertools import combinations
 from collections import Counter
 from poker.player import Player
-from poker.game import PokerGame
+
 
 class Evaluator:
     """
