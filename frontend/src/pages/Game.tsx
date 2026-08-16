@@ -8,13 +8,16 @@ function Game() {
     const { gameId } = useParams();
     const [game, setGame] = useState<GameData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isMyTurn, setIsMyTurn] = useState(false);
+    const [statusMessage, setStatusMessage] = useState("");
     const wsRef = useRef<WebSocket | null>(null);
+
 
 
     useEffect(() => {
         const apiUrl = import.meta.env.VITE_API_URL;
 
-        const ws = new WebSocket(`${apiUrl}/games/game_data?game_id=${gameId}`);
+        const ws = new WebSocket(`${apiUrl}/games/game_data?game_id=${gameId}&player_id=1`);
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -23,7 +26,40 @@ function Game() {
         };
 
         ws.onmessage = (event) => {
-            console.log("data received -> ", event);
+            const data = JSON.parse(event.data);
+            console.log("Data received -> ", data);
+
+            switch (data.type) {
+                case "GET_USER_PREFLOP_BET":
+                case "GET_USER_FLOP_BET":
+                case "GET_USER_TURN_BET":
+                case "GET_USER_RIVER_BET":
+                    setIsMyTurn(true);
+                    setStatusMessage("It's your turn!");
+                    fetchGame();
+                    break;
+                case "BOT_THINKING":
+                    setStatusMessage(`${data.player_name || "Bot"} is thinking...`);
+                    break;
+                case "BOT_ACTION":
+                    setStatusMessage(`${data.player_name || "Bot"} acted: ${data.action}`);
+                    fetchGame();
+                    break;
+                case "OPEN_TABLE_CARD":
+                    setStatusMessage(`Card revealed: ${data.card}`);
+                    fetchGame();
+                    break;
+                case "WINNER":
+                    alert(`Winner: ${data.winner_name} with ${data.amount} chips!`);
+                    fetchGame();
+                    break;
+                case "SPLIT_POT":
+                    alert(`Split Pot! Winners: ${data.winners.join(", ")}. Each gets ${data.amount}`);
+                    fetchGame();
+                    break;
+                default:
+                    console.log("Unknown message type:", data.type);
+            }
         }
 
         ws.onerror = () => {
@@ -48,8 +84,7 @@ function Game() {
         }
 
         function gameState(data: GameData) {
-            switch(data.state)
-            {
+            switch (data.state) {
                 case "PREFLOP":
                     console.log("is preflop state");
             }
@@ -58,6 +93,8 @@ function Game() {
 
     function sendAction(action: string, amount: number = 0) {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
+            setIsMyTurn(false);
+            setStatusMessage("Action sent, waiting for others...");
             wsRef.current.send(JSON.stringify({
                 type: "PLAYER_ACTION",
                 action: action,
@@ -71,7 +108,7 @@ function Game() {
     }
 
     function handleCall() {
-        sendAction("Call");
+        sendAction("Call", game?.call_amt);
     }
 
     function handleRaise() {
@@ -102,7 +139,11 @@ function Game() {
             <br />
             <p>Small Blind: {game.small_blind}</p>
             <p>Big Blind: {game.big_blind}</p>
+            <p>Pot: {game.pot}</p>
             <br />
+            <div style={{ marginBottom: '10px', fontWeight: 'bold', color: isMyTurn ? 'green' : 'black' }}>
+                {statusMessage || (isMyTurn ? "Your turn to act!" : "Waiting for players...")}
+            </div>
             <table>
                 <thead>
                     <tr>
@@ -110,7 +151,7 @@ function Game() {
                     </tr>
                     <tr>
                         <th>Player Name</th>
-                        <th>Holding</th>
+                        <th>Chips</th>
                         <th>Is Bot?</th>
                         <th>All In?</th>
                         <th>Fold?</th>
@@ -131,11 +172,17 @@ function Game() {
                     ))}
                 </tbody>
             </table>
+            <div>
+                <p><b>Table Cards</b></p>
+                {game.table_cards.map((tc) => (
+                    <p>{ tc }</p>
+                ))}
+            </div>
             <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-                <button onClick={handleCall}>Call / Bet</button>
-                <button onClick={handleRaise}>Raise</button>
-                <button onClick={handleFold}>Fold</button>
-                <button onClick={handleAllIn}>All In</button>
+                <button onClick={handleCall} disabled={!isMyTurn}>Call / Bet</button>
+                <button onClick={handleRaise} disabled={!isMyTurn}>Raise</button>
+                <button onClick={handleFold} disabled={!isMyTurn}>Fold</button>
+                <button onClick={handleAllIn} disabled={!isMyTurn}>All In</button>
             </div>
         </>
 

@@ -5,8 +5,8 @@ class GameService:
     def __init__(self):
         self.manager = manager.GameManager()
     
-    def create_game(self, request: CreateGameRequest):
-        gmid = self.manager.create_game(request = request)
+    async def create_game(self, request: CreateGameRequest):
+        gmid = await self.manager.create_game(request = request)
         return gmid
     
     def get_game(self, gameid: str):

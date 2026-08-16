@@ -14,12 +14,13 @@ export type GameData = {
     guid: string;
     small_blind: number,
     big_blind: number,
+    call_amt:number,
     players: Player[],
     max_players: number,
     num_players: number,
     pot: number,
     table_cards: string[],
-    state: string
+    state: string,
 };
 
 type Player = {

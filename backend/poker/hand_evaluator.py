@@ -3,6 +3,10 @@ from itertools import combinations
 from collections import Counter
 from poker.player import Player
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from poker.game import PokerGame
 
 class Evaluator:
     """

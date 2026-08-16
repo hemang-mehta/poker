@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 function CreateGame() {
     const navigate = useNavigate();
 
-    const [hostName, setHostName] = useState("");
-    const [chips, setChips] = useState(1000);
+    const [hostName, setHostName] = useState("hemang");
+    const [chips, setChips] = useState(10000);
     const [maxPlayers, setMaxPlayers] = useState(6);
 
     const [loading, setLoading] = useState(false);

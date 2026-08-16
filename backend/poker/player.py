@@ -20,5 +20,4 @@ class Player:
 class Bot(Player):
 
     def decide_action(self, game):
-        # AI logic will go here
-        pass
+        return "Call", game.call_amt

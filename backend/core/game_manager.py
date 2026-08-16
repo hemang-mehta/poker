@@ -4,15 +4,20 @@ class GameManager:
     def __init__(self):
         self.game_data = {}
 
-    def create_game(self, request: CreateGameRequest):
+    async def create_game(self, request: CreateGameRequest):
         import poker.game as game
         import uuid
-        
+        import asyncio
+
         my_guid = uuid.uuid4()
         guid_str = str(my_guid)
-                
-        self.game_data[guid_str] = game.PokerGame(guid = guid_str, **request.model_dump(exclude_none=True))
-        
+
+        p_game = game.PokerGame(guid = guid_str, **request.model_dump(exclude_none=True))
+        self.game_data[guid_str] = p_game
+
+        # Start the game loop in the background
+        asyncio.create_task(p_game.action())
+
         return guid_str
     
     def get_game(self, guid):

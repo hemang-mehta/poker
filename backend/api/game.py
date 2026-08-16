@@ -23,15 +23,15 @@ def start_game(req: CreateGameRequest):
     return {"message": "Starting game..."}
 
 @router.post("/creategame", response_model=CreateGameResponse)
-def create_game(req: CreateGameRequest):
-    guid = gmservice.create_game(request=req)
+async def create_game(req: CreateGameRequest):
+    guid = await gmservice.create_game(request=req)
     return CreateGameResponse(
         game_id=guid
     )
 
 @router.get("/{gameid}")
 def get_game(gameid: str, player_id: Optional[int] = Query(None)):
-    game = gmservice.get_game(gameid)
+    game: PokerGame = gmservice.get_game(gameid)
 
     # Filter players based on the player_id requesting the data
     filtered_players = []
@@ -48,6 +48,7 @@ def get_game(gameid: str, player_id: Optional[int] = Query(None)):
         "guid": game.guid,
         "small_blind": game.small_blind,
         "big_blind": game.big_blind,
+        "call_amt": game.call_amt,
         "max_players": game.max_players,
         "num_players": game.num_players,
         "pot": game.pot,
@@ -57,14 +58,19 @@ def get_game(gameid: str, player_id: Optional[int] = Query(None)):
     }
 
 @router.websocket("/game_data")
-async def get_curr_game_data(websocket: WebSocket, game_id: str = Query(...)):
+async def get_curr_game_data(websocket: WebSocket, game_id: str = Query(...), player_id: int = Query(...)):
     await connection_manager.connect(game_id, websocket)
+
+    # Notify the game that a player has connected to handle race conditions
+    game: PokerGame = gmservice.get_game(game_id)
+    game.notify_player_connected(player_id)
+
     try:
         while True:
             data = await websocket.receive_text()
             req_obj: PlayerAction = json.loads(data)
-            game: PokerGame = gmservice.get_game(req_obj.gameid)
-            game.handle_player_action(player_id=req_obj.player_id, action_type=req_obj.action, amount=req_obj.amount)
+            game = gmservice.get_game(req_obj['gameid'])
+            game.handle_player_action(player_id=req_obj['player_id'], action_type=req_obj['action'], amount=req_obj['amount'])
     except Exception as e:
         print(e)
     finally:

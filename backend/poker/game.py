@@ -17,7 +17,7 @@ class PokerGame:
 
         self.table_cards = []
         
-        self.num_players = 1
+        self.num_players = max_players
         self.max_players = max_players
         self.players: list[Player] = []
         
@@ -31,6 +31,7 @@ class PokerGame:
         
         self.state = "PREFLOP"
         self.current_turn_index = None
+        self.turn_event = asyncio.Event()
 
         self.create_players(host_name, starting_money)
         
@@ -38,39 +39,47 @@ class PokerGame:
         self.evaluator = Evaluator(self)
     
     async def action(self):
-        # Deal cards and get the blind values
-        if self.state == "PREFLOP":
-            self._initialize_hands()
-            self.post_blinds()
-        # Get the preflop bets
-        elif self.state == "PREFLOP_BETTING":
-            sb_ind = self._next_active_index(self.dealer_ind)
-            bb_ind = self._next_active_index(sb_ind)
-            await self._process_betting_round(last_ind=bb_ind, user_event_type="GET_USER_PREFLOP_BET")
-        # Open 3 cards for the table for all to see
-        elif self.state == "OPEN_3_TABLE_CARDS":
-            await self._open_table_cards(3)
-            self.state = "FLOP_BETTING"
-        # Get bets
-        elif self.state == "FLOP_BETTING":
-            await self._process_betting_round(last_ind=self.dealer_ind, user_event_type="GET_USER_FLOP_BET")
-        # Open 4th table card
-        elif self.state == "OPEN_TURN_CARD":
-            await self._open_table_cards(1)
-            self.state = "TURN_BETTING"
-        # When the 4th table card is opened
-        elif self.state == "TURN_BETTING":
-            await self._process_betting_round(last_ind=self.dealer_ind, user_event_type="GET_USER_TURN_BET")
-        # Open 5th table card
-        elif self.state == "OPEN_RIVER_CARD":
-            await self._open_table_cards(1)
-            self.state = "RIVER_BETTING"
-        # When all table cards are opened
-        elif self.state == "RIVER_BETTING":
-            await self._process_betting_round(last_ind=self.dealer_ind, user_event_type="GET_USER_RIVER_BET")
-        # Evaluate hands
-        elif self.state == "EVAL_HANDS":
-            await self.showdown()
+        while self.state != "GAME_OVER":
+            # Deal cards and get the blind values
+            if self.state == "PREFLOP":
+                self._initialize_hands()
+                self.post_blinds()
+            # Get the preflop bets
+            elif self.state == "PREFLOP_BETTING":
+                sb_ind = self._next_active_index(self.dealer_ind)
+                bb_ind = self._next_active_index(sb_ind)
+                await self._process_betting_round(last_ind=bb_ind, user_event_type="GET_USER_PREFLOP_BET")
+            # Open 3 cards for the table for all to see
+            elif self.state == "OPEN_3_TABLE_CARDS":
+                await self._open_table_cards(3)
+                self.state = "FLOP_BETTING"
+            # Get bets
+            elif self.state == "FLOP_BETTING":
+                self._reset_curr_round_bets()
+                await self._process_betting_round(last_ind=self.dealer_ind, user_event_type="GET_USER_FLOP_BET")
+            # Open 4th table card
+            elif self.state == "OPEN_TURN_CARD":
+                await self._open_table_cards(1)
+                self.state = "TURN_BETTING"
+            # When the 4th table card is opened
+            elif self.state == "TURN_BETTING":
+                self._reset_curr_round_bets()
+                await self._process_betting_round(last_ind=self.dealer_ind, user_event_type="GET_USER_TURN_BET")
+            # Open 5th table card
+            elif self.state == "OPEN_RIVER_CARD":
+                await self._open_table_cards(1)
+                self.state = "RIVER_BETTING"
+            # When all table cards are opened
+            elif self.state == "RIVER_BETTING":
+                self._reset_curr_round_bets()
+                await self._process_betting_round(last_ind=self.dealer_ind, user_event_type="GET_USER_RIVER_BET")
+            # Evaluate hands
+            elif self.state == "EVAL_HANDS":
+                await self.showdown()
+            else:
+                # Prevent infinite loop if state is unknown
+                print(f"Unknown state: {self.state}")
+                break
     
     def send_state(self, state):
         # We use create_task to send the state asynchronously without blocking the game logic
@@ -99,42 +108,44 @@ class PokerGame:
                 # It's the user's turn: notify via websocket and STOP to wait for input.
                 self.send_state({
                     "type": user_event_type,
-                    "player_id": player.player_ind,
+                    "player_id": player.player_id,
                     "game_id": self.guid
                 })
-                return
-
-            # It's a bot's turn: simulate thinking and then act.
-            # 1. Notify frontend that bot is thinking
-            self.send_state({
-                "type": "BOT_THINKING",
-                "player_id": next_ind,
-                "player_name": player.player_name,
-                "game_id": self.guid
-            })
-
-            # 2. Simulate "thinking" delay
-            await asyncio.sleep(1.5)
-
-            # 3. Process their action
-            action_result = player.decide_action(self) if hasattr(player, 'decide_action') else None
-
-            if action_result is None:
-                # Default action for bots if logic is not yet implemented
-                self.handle_player_action(next_ind, "Call", 0)
-                action_type, amount = "Call", 0
+                await self.turn_event.wait()
+                self.turn_event.clear()
             else:
-                action_type, amount = action_result
-                self.handle_player_action(next_ind, action_type, amount)
+                    
+                # It's a bot's turn: simulate thinking and then act.
+                # 1. Notify frontend that bot is thinking
+                self.send_state({
+                    "type": "BOT_THINKING",
+                    "player_id": next_ind,
+                    "player_name": player.player_name,
+                    "game_id": self.guid
+                })
 
-            # 4. Notify frontend of the actual action
-            self.send_state({
-                "type": "BOT_ACTION",
-                "player_id": next_ind,
-                "action": action_type,
-                "amount": amount,
-                "game_id": self.guid
-            })
+                # 2. Simulate "thinking" delay
+                await asyncio.sleep(1.5)
+
+                # 3. Process their action
+                action_result = player.decide_action(self) if hasattr(player, 'decide_action') else None
+
+                if action_result is None:
+                    # Default action for bots if logic is not yet implemented
+                    self.handle_player_action(next_ind + 1, "Call", 0)
+                    action_type, amount = "Call", 0
+                else:
+                    action_type, amount = action_result
+                    self.handle_player_action(next_ind + 1, action_type, amount)
+
+                # 4. Notify frontend of the actual action
+                self.send_state({
+                    "type": "BOT_ACTION",
+                    "player_id": next_ind,
+                    "action": action_type,
+                    "amount": amount,
+                    "game_id": self.guid
+                })
 
             last_ind = next_ind
 
@@ -189,6 +200,10 @@ class PokerGame:
     #   Helper functions
     #########################################
     
+    def _reset_curr_round_bets(self):
+        for p in self.players:
+            p.curr_round_bet = 0
+    
     def _initialize_hands(self):        
         # Deal Cards
         self.main_dealer.deal_cards()        
@@ -222,19 +237,53 @@ class PokerGame:
         return self.current_turn_index == player_id
 
     def handle_player_action(self, player_id, action_type, amount=0):
+        # Resolve player_id (which might be the Player.player_id or the index) to the actual index
+        actual_ind = -1
+        for i, p in enumerate(self.players):
+            if p.player_id == player_id or i == player_id:
+                actual_ind = i
+                break
+
+        if actual_ind == -1:
+            return {"error": "Player not found"}
 
         # 1. Verify it is actually this player's turn
-        if not self.is_players_turn(player_id):
+        if not self.is_players_turn(actual_ind):
             return {"error": "Not your turn"}
 
         # 2. Delegate all action logic to BettingLogic
-        result = self.bet_logic.handle_bet(player_id, action_type, amount)
+        player = self.players[actual_ind]
+        result = self.bet_logic.handle_bet(player, action_type, amount)
 
         # 3. Check if the betting round is over
         if self._is_betting_round_complete():
             self._advance_game_state()
 
+        # Wake up the game loop ONLY if it's a human player
+        if not player.is_bot:
+            self.turn_event.set()
+
         return result
+
+    def notify_player_connected(self, player_id):
+        """Check if it's the connected player's turn and resend the notification."""
+        # We check if the player whose turn it is is the one who just connected
+        # Note: player_id passed from API is the 'id' (1, 2...), not the index (0, 1...)
+        if self.current_turn_index is not None:
+            current_player = self.players[self.current_turn_index]
+            if current_player.player_id == player_id:
+                # It's their turn! We need to figure out which event type to send.
+                event_type = "UNKNOWN_TURN"
+                if "PREFLOP" in self.state: event_type = "GET_USER_PREFLOP_BET"
+                elif "FLOP" in self.state: event_type = "GET_USER_FLOP_BET"
+                elif "TURN" in self.state: event_type = "GET_USER_TURN_BET"
+                elif "RIVER" in self.state: event_type = "GET_USER_RIVER_BET"
+
+                self.send_state({
+                    "type": event_type,
+                    "player_id": current_player.player_ind,
+                    "game_id": self.guid
+                })
 
     """First seat after from_ind that hasn't folded or been eliminated."""
     def _next_active_index(self, from_ind):
@@ -289,7 +338,7 @@ class PokerGame:
         elif self.state == "TURN_BETTING":
             self.state = "OPEN_RIVER_CARD"
         elif self.state == "RIVER_BETTING":
-            self.state = "SHOWDOWN"
+            self.state = "EVAL_HANDS"
         else:
             print(f"Warning: No advance state defined for {self.state}")
 
@@ -297,9 +346,15 @@ class PokerGame:
     def create_players(self, host_name, host_money):
         # Creating Players
         self.players = []
-        
-        self.players.append(Player(id=1, name=host_name, money=host_money))
+
+        # Host is player 0
+        host = Player(id=1, name=host_name, money=host_money)
+        host.player_ind = 0
+        self.players.append(host)
+
         for i in range(self.max_players - 1):
-            self.players.append(Bot(id=i+2, name=f"Bot_{i+1}", is_bot=True))
+            bot = Bot(id=i+2, name=f"Bot_{i+1}", is_bot=True)
+            bot.player_ind = i + 1
+            self.players.append(bot)
         return
 
